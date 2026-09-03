@@ -1,0 +1,4 @@
+# OPNsense MCP — Python dependencies
+# The server only needs the MCP SDK (FastMCP) and `requests`.
+mcp>=1.2,<2
+requests>=2.31
