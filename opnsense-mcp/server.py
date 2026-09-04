@@ -24,6 +24,7 @@ MCPs (aruba, virsh).
 """
 import json
 import os
+import re
 from typing import Optional
 
 import anyio
@@ -272,9 +273,9 @@ async def opnsense_add_vlan(iface: str, vlan: int, descr: str,
         descr: description shown in the UI.
         pcid: optional parent interface (for nested VLANs).
     """
-    item = {"if": iface, "tag": str(vlan), "descr": descr}
+    item = {"if": iface, "tag": int(vlan), "descr": descr}
     if pcid is not None:
-        item["pcid"] = str(pcid)
+        item["pcid"] = int(pcid)
     return await _run(_post, "interfaces/vlan_settings/add_item",
                       body={"vlan": item})
 
@@ -297,19 +298,36 @@ async def opnsense_list_lagg() -> str:
 
 
 @mcp.tool()
-async def opnsense_add_lagg(iface: str, port: str, descr: str,
-                            mode: str = "failover") -> str:
-    """Add a LAGG interface (interfaces/lagg_settings/add_item).
+async def opnsense_add_lagg(ports: str, descr: str,
+                            mode: str = "failover",
+                            primary_member: Optional[str] = None) -> str:
+    """Add a LAGG (link aggregation) interface (interfaces/lagg_settings/add_item).
+    The new LAGG must then be applied via ``opnsense_api`` POST
+    interfaces/lagg_settings/reconfigure.
 
     Args:
-        iface: parent interface key.
-        port: member port (comma list).
-        descr: description.
-        mode: failover (default), ltr, roundrobin, loadbalance.
+        ports: comma-separated member interface names (e.g. "vtnet2,vtnet3").
+        descr: description shown in the UI.
+        mode: proto — failover (default), lacp, loadbalance, roundrobin, fec, none.
+        primary_member: primary (active) member, used with failover.
     """
-    item = {"if": iface, "ports": port, "descr": descr, "mode": mode}
+    members = ",".join(p.strip() for p in ports.split(",") if p.strip())
+    item = {"members": members, "proto": mode, "descr": descr}
+    if primary_member:
+        item["primary_member"] = primary_member
     return await _run(_post, "interfaces/lagg_settings/add_item",
                       body={"lagg": item})
+
+
+@mcp.tool()
+async def opnsense_delete_lagg(uuid: str) -> str:
+    """Delete a LAGG interface by uuid (interfaces/lagg_settings/del_item).
+    May fail if the LAGG is still in use by an interface or VLAN.
+
+    Args:
+        uuid: LAGG uuid (from opnsense_list_lagg).
+    """
+    return await _run(_post, f"interfaces/lagg_settings/del_item/{uuid}")
 
 
 # --------------------------------------------------------------------------
@@ -627,6 +645,188 @@ async def opnsense_get_memory() -> str:
 async def opnsense_get_system_time() -> str:
     """Current firewall time (diagnostics/system/system_time)."""
     return await _run(_get, "diagnostics/system/system_time")
+
+
+# --------------------------------------------------------------------------
+# access: user manager + legacy web session
+#
+# Some config nodes (e.g. system.timeservers) have NO REST endpoint — only the
+# legacy web UI pages write them. The tools below cover that: user password
+# management via the auth/user API, and legacy-form submission through a
+# scripted web session (cookie + CSRF token, see _web_session).
+# --------------------------------------------------------------------------
+def _read_secret_file(path: str) -> str:
+    """Read a secret (e.g. a password) from a file on the host running this
+    server. The secret never appears in tool arguments or logs."""
+    try:
+        with open(os.path.expanduser(path), "r", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError as e:
+        raise ValueError(f"cannot read {path}: {e}") from e
+
+
+def _csrf_from_html(html: str):
+    """Extract the (token, key) pair from a legacy CSRF hidden input."""
+    m = re.search(
+        r'<input type="hidden" name="([^"]+)" value="([^"]+)"[^>]*'
+        r'autocomplete="new-password"', html)
+    if not m:
+        m = re.search(r'<input type="hidden" name="([^"]+)" value="([^"]+)"',
+                      html)
+    return (m.group(2), m.group(1)) if m else (None, None)
+
+
+def _web_session(username: str, password: str) -> requests.Session:
+    """Log into the OPNsense web UI and return an authenticated session.
+
+    Every non-GET request to the web frontend must carry the session CSRF
+    token (hidden form field or X-CSRFToken header); login is a plain form
+    POST (usernamefld/passwordfld) to /index.php.
+    """
+    sess = requests.Session()
+    sess.verify = _verify()
+    base = _base()
+    r = sess.get(base + "/index.php", timeout=TIMEOUT)
+    token, _key = _csrf_from_html(r.text)
+    headers = {"X-CSRFToken": token} if token else {}
+    r = sess.post(
+        base + "/index.php",
+        data={"usernamefld": username, "passwordfld": password,
+              "login": "Login"},
+        headers=headers, timeout=TIMEOUT, allow_redirects=False)
+    if r.status_code not in (302, 303):
+        raise RuntimeError(
+            f"web login failed (status={r.status_code}); check web_user "
+            f"and password_file")
+    return sess
+
+
+@mcp.tool()
+async def opnsense_search_users() -> str:
+    """List local web/API users (auth/user/search): uuid, name, scope, priv,
+    disabled, is_admin. Use to find a user's uuid before updating them.
+    """
+    return await _run(_get, "auth/user/search")
+
+
+@mcp.tool()
+async def opnsense_set_user_password(username: str,
+                                     password_file: str) -> str:
+    """Reset the web password of a local user (auth/user/set).
+
+    Sends only the password field (the model hashes and stores it server
+    side). If the partial update is rejected, it falls back to fetching the
+    full user record, replacing the password, and re-applying it.
+
+    Args:
+        username: exact username, e.g. "opencode".
+        password_file: path to a file containing the new password (read from
+            disk; the password is never a tool argument).
+    """
+    def go():
+        try:
+            password = _read_secret_file(password_file)
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        if not password:
+            return {"ok": False, "error": "password file is empty"}
+        search = _get("auth/user/search")
+        rows = (search.get("data") or {}).get("rows") or []
+        match = [u for u in rows if u.get("name") == username]
+        if not match:
+            return {"ok": False,
+                    "error": f"user {username!r} not found "
+                             f"(have: {[u.get('name') for u in rows]})"}
+        uuid = match[0]["uuid"]
+        res = _post("auth/user/set/" + uuid, body={"user": {"password": password}})
+        if not res.get("ok") or (res.get("data") or {}).get("result") not in (
+                "saved", "ok"):
+            # fallback: full-record apply with password swapped in
+            rec = _get("auth/user/get/" + uuid)
+            user = (rec.get("data") or {}).get("user") or {}
+            if not user:
+                return res
+            user.pop("scrambled_password", None)
+            user["password"] = password
+            res = _post("auth/user/set/" + uuid, body={"user": user})
+        data = res.get("data")
+        result = data.get("result") if isinstance(data, dict) else None
+        out = {"ok": res.get("ok", False) and result in ("saved", "ok"),
+               "status": res.get("status"), "user": username,
+               "uuid": uuid, "result": result}
+        if not out["ok"]:
+            out["error"] = (data or {}).get("validations") or \
+                           (data or {}).get("errorMessage") or "set failed"
+        return out
+    return await _run(go)
+
+
+@mcp.tool()
+async def opnsense_set_timeservers(timeservers: str, web_user: str = "opencode",
+                                   password_file: str = "") -> str:
+    """Set the system NTP servers (system.timeservers) via the web UI.
+
+    The REST API has no endpoint for this node — only the legacy
+    /services_ntpd.php page writes it — so this performs a scripted web login
+    as ``web_user`` and submits the NTP form. Saving restarts ntpd
+    automatically. Pool hosts (*.<n>.pool.ntp.org) are marked as pools,
+    matching the GUI behaviour.
+
+    Args:
+        timeservers: space-separated NTP server names, e.g.
+            "0.ca.pool.ntp.org 1.ca.pool.ntp.org 2.ca.pool.ntp.org 3.ca.pool.ntp.org".
+        web_user: web UI username to log in as (default "opencode").
+        password_file: path to a file containing that user's web password.
+
+    Returns the REST verification: ntpd/service/status + core/system/status.
+    """
+    def go():
+        if not (password_file or "").strip():
+            return {"ok": False, "error": "password_file is required"}
+        try:
+            password = _read_secret_file(password_file)
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        try:
+            sess = _web_session(web_user, password)
+        except (RuntimeError, requests.exceptions.RequestException) as e:
+            return {"ok": False, "error": str(e)}
+        base = _base()
+        r = sess.get(base + "/services_ntpd.php", timeout=TIMEOUT)
+        if "usernamefld" in r.text:
+            return {"ok": False,
+                    "error": "web session not authenticated (login form "
+                             "rendered)"}
+        token, _key = _csrf_from_html(r.text)
+        headers = {"X-CSRFToken": token} if token else {}
+        hosts = [h for h in timeservers.split() if h]
+        if not hosts:
+            return {"ok": False, "error": "timeservers is empty"}
+        data = {
+            "timeservers_host[]": hosts,
+            "timeservers_ispool[]": [h for h in hosts
+                                     if h.endswith(".pool.ntp.org")],
+            "Submit": "save",
+        }
+        r = sess.post(base + "/services_ntpd.php", data=data,
+                      headers=headers, timeout=TIMEOUT, allow_redirects=False)
+        if r.status_code not in (302, 303):
+            return {"ok": False, "status": r.status_code,
+                    "error": "NTP form not saved (no redirect)"}
+        ntpd_status = _get("ntpd/service/status")
+        sys_status = _get("core/system/status")
+        meta = (sys_status.get("data") or {}).get("metadata", {})
+        return {"ok": True, "status": r.status_code,
+                "data": {"saved": True, "timeservers": hosts,
+                         "ntpd_status": ntpd_status.get("data"),
+                         "system": meta.get("system")}}
+    return await _run(go)
+
+
+@mcp.tool()
+async def opnsense_get_ntp_status() -> str:
+    """ntpd service status (ntpd/service/status)."""
+    return await _run(_get, "ntpd/service/status")
 
 
 if __name__ == "__main__":

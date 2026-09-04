@@ -19,17 +19,19 @@ there is no first-class tool for it.
 
 ## Features
 
-- **~48 first-class tools** grouped by area:
+- **~53 first-class tools** grouped by area:
   - system: status, dashboard, version info, reboot, halt
   - interfaces: list, config, names, statistics, reload
   - VLANs: list, add, delete
-  - LAGG (link aggregation): list, add
+  - LAGG (link aggregation): list, add, delete
   - firewall rules: list/search, get, add, set, delete, toggle, apply
   - NAT: port-forward (d_NAT) add/list/delete, 1:1 NAT, outbound (source) NAT
   - DHCP/DNS: dnsmasq leases, status, config; unbound (DNS) settings/nameservers/status
   - services: list, start, stop, restart
   - backup: list, providers, download
   - diagnostics: routes, ARP, pf states, pf statistics, memory, system time
+  - access/NTP: user search, web password reset, NTP server set (web-session),
+    ntpd status
 - **`opnsense_api`** — call any `/api/...` endpoint (GET/POST) directly.
 - **`opnsense_ping`** — one-call health check (confirms auth + reachability).
 - Every tool returns a normalized `{ok, status, data, error?}` object.
@@ -92,6 +94,11 @@ A successful `opnsense_ping` returns `{"ok": true, "status": 200, ...}`.
 Firewall writes are real. Prefer the read tools first, stage changes, and use
 `opnsense_apply_firewall` only when you intend to push staged rule changes to
 the live firewall. Keep the box's API key/secret private.
+
+The web-session tools (`opnsense_set_timeservers`, `opnsense_set_user_password`)
+log in through the web UI because some settings (notably `system.timeservers`)
+have no REST endpoint. They take the web password as a **file path** argument
+(`password_file`) and never accept it inline — keep those files private.
 
 ## API reference
 
