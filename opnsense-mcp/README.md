@@ -19,19 +19,40 @@ there is no first-class tool for it.
 
 ## Features
 
-- **~53 first-class tools** grouped by area:
-  - system: status, dashboard, version info, reboot, halt
-  - interfaces: list, config, names, statistics, reload
-  - VLANs: list, add, delete
-  - LAGG (link aggregation): list, add, delete
-  - firewall rules: list/search, get, add, set, delete, toggle, apply
+- **~430 first-class tools** grouped by area:
+  - system: status, dashboard, version info, reboot, halt, firmware
+    (check/status/upgrade/audit/changelog/log, plugin sync, package
+    install/remove/lock/details/license), tunables
+  - interfaces: list, config, names, statistics, reload, VLANs (list/add/delete),
+    LAGG (list/add/delete), logical-interface assignment CRUD (26.7
+    `interfaces/assignment`), interface settings, DHCPv6
+  - firewall: rules (list/search/get/add/set/delete/toggle, per-rule stats,
+    apply), aliases (CRUD + live pf-table `alias_util` add/list/delete/flush/
+    find_references), groups (CRUD)
   - NAT: port-forward (d_NAT) add/list/delete, 1:1 NAT, outbound (source) NAT
-  - DHCP/DNS: dnsmasq leases, status, config; unbound (DNS) settings/nameservers/status
+  - routing: static gateways (CRUD + status), static routes (CRUD + toggle),
+    routing settings
+  - DHCP/DNS: dnsmasq leases/status/config (hosts, domains, options, ranges,
+    tags); unbound (DNS) full settings, forwarders, host overrides, host
+    aliases, ACLs, blocklists, DNSBL, stats
   - services: list, start, stop, restart
   - backup: list, providers, download
-  - diagnostics: routes, ARP, pf states, pf statistics, memory, system time
-  - access/NTP: user search, web password reset, NTP server set (web-session),
-    ntpd status
+  - diagnostics: routes, ARP, pf states, pf statistics, memory, system time,
+    ping jobs (set/start/stop/remove/search), portprobe, traceroute,
+    interface statistics
+  - auth: user search, web password reset, NTP server set (web-session),
+    ntpd status, privilege CRUD
+  - monitoring: monit (config, services, alerts, tests, status, reconfigure)
+  - logging: syslog (config, destinations, status)
+  - traffic shaping: shaper config, pipes, queues, rules, statistics
+  - certificates: trusted CA search/add/delete (raw dump), certificate search/
+    add/delete (raw dump), CRL search, trust settings
+  - VPN: WireGuard (general settings, server/client CRUD, key pairs, status,
+    reconfigure), IPSec (connections, pools, key pairs, PSKs, leases, phase1/
+    phase2 sessions, swanctl, status, reconfigure), OpenVPN (instances,
+    static keys, sessions, reconfigure)
+  - IDS/IPS: settings, rule sets, installed rules, user rules, policies,
+    alert logs, status, reconfigure
 - **`opnsense_api`** — call any `/api/...` endpoint (GET/POST) directly.
 - **`opnsense_ping`** — one-call health check (confirms auth + reachability).
 - Every tool returns a normalized `{ok, status, data, error?}` object.
