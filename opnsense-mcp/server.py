@@ -654,6 +654,14 @@ async def opnsense_get_interface_statistics() -> str:
 async def opnsense_reload_interface(iface: str) -> str:
     """Reload/apply one interface (interfaces/overview/reload_interface).
 
+    This is the endpoint that actually applies an IP change: the REST
+    ``set_item`` endpoint silently drops IP fields on an interface node that
+    does not already carry them, so the proven path for "give an interface an
+    IP" is (1) submit the legacy ``interfaces.php?if=<if>`` WebUI form, then
+    (2) call this tool to bring the new address up. ``reconfigure`` is
+    todo-only and will NOT apply an IP. Verify afterwards via
+    ``interfaces/overview/interfaces_info`` (rows carry ``status``/``addr4``).
+
     Args:
         iface: interface key to reload.
     """
@@ -771,10 +779,22 @@ async def opnsense_add_rule(rule: dict) -> str:
     """Add a firewall rule (firewall/filter/addRule). The rule is staged in config;
     call ``opnsense_apply_firewall`` to activate it.
 
+    Notes (learned live):
+        * ``protocol`` is an OptionField — over-specific values like
+          ``"ICMPv4"`` can fail with ``validations: {"rule.protocol":
+          "Option [] not in list."}``. For a reliable pass rule use
+          ``protocol:"any"`` + ``ipprotocol:"inet"`` (IPv4).
+        * To target the firewall's own address use ``destination_type:"this"``.
+        * source/destination net type must match ``ipprotocol``.
+
     Args:
         rule: rule object, e.g. {"description":"allow lan->10.0.0.0/24",
             "interface":"lan","source_net":"192.168.0.0/24",
             "destination_net":"10.0.0.0/24","protocol":"TCP","target":"pass"}.
+            A verified "allow 192.168.50.0/24 to the firewall itself" rule:
+            {"interface":"opt1","ipprotocol":"inet","protocol":"any",
+             "source_net":"192.168.50.0/24","destination_type":"this",
+             "target":"pass"}.
     """
     return await _run(_post, "firewall/filter/addRule", body={"rule": rule})
 
@@ -2064,6 +2084,12 @@ async def opnsense_ping_set(settings: dict) -> str:
     """Configure a continuous ping job (diagnostics/ping/set) and get its
     uuid. Model-based double-nested body: {"ping": {"settings": {...}}}.
 
+    This is the way to prove L3 reachability without shell access to the
+    guest: start a job to the peer, then read ``opnsense_ping_search_jobs``
+    (live ``loss``/``send``/``received``) and/or ``opnsense_query_pf_states``
+    (an active ICMP state ``src→dst`` with balanced ``pkts:[out,in]`` = 0%
+    loss). There is no ``count`` field — the job runs until you stop it.
+
     Args:
         settings: e.g. {"hostname":"1.1.1.1","fam":"ip","interval":1}.
     """
@@ -2097,7 +2123,11 @@ async def opnsense_ping_stop(job_id: str) -> str:
 
 @mcp.tool()
 async def opnsense_ping_remove(job_id: str) -> str:
-    """Remove a ping job (diagnostics/ping/remove/<jobid>)."""
+    """Remove a ping job (diagnostics/ping/remove/<jobid>).
+
+    Fails while the job is still running — call ``opnsense_ping_stop`` first,
+    then this.
+    """
     return await _run(_post, f"diagnostics/ping/remove/{job_id}")
 
 

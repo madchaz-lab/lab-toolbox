@@ -19,7 +19,8 @@ there is no first-class tool for it.
 
 ## Features
 
-- **~430 first-class tools** grouped by area:
+- **397 tools** — one wrapper per REST endpoint plus a set of curated
+  high-level helpers, grouped by area:
   - system: status, dashboard, version info, reboot, halt, firmware
     (check/status/upgrade/audit/changelog/log, plugin sync, package
     install/remove/lock/details/license), tunables

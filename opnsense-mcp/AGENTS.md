@@ -20,7 +20,7 @@ with `data.result == "failed"` and a `data.validations` object — **check
    go live until `opnsense_apply_firewall`.
 4. Verify by re-reading.
 
-## Tool catalog (432 tools)
+## Tool catalog (397 tools)
 
 Exact tool names below (verified via `mcp.list_tools()`); every name is
 `opnsense_`-prefixed — the prefix is dropped in this list for readability.
@@ -193,6 +193,15 @@ Exact tool names below (verified via `mcp.list_tools()`); every name is
 - **`addRule` validation:** source/destination net type must match the rule's
   `ipprotocol` (default `inet4`). Mixing IPv4 nets with `inet46` fails with
   `data.validations`. Omit `ipprotocol` for IPv4 rules.
+- **`addRule` `protocol` is an OptionField — don't over-specify.** A specific
+  value like `protocol:"ICMPv4"` can fail with
+  `validations: {"rule.protocol": "Option [] not in list."}`. The reliable form
+  for a pass rule is `protocol:"any"` + `ipprotocol:"inet"` (IPv4). To target
+  the firewall's own address use `destination_type:"this"`. `addRule` only
+  *stages* the rule — call `opnsense_apply_firewall` to push it live. Verified
+  live: `{"interface":"opt1","ipprotocol":"inet","protocol":"any",
+  "source_net":"192.168.50.0/24","destination_type":"this","target":"pass"}`
+  saved + applied cleanly on both roshi and picolo.
 - **No-body POSTs send `{}`** so the request has a `Content-Length`; the
   OPNsense web frontend otherwise answers `411 Length Required`.
 - **Model-based `set` endpoints need a doubly-nested body.** Controllers
@@ -206,7 +215,10 @@ Exact tool names below (verified via `mcp.list_tools()`); every name is
   `validations: {"<model>.settings.<field>": "A value is required."}`.
   Ping jobs are *continuous* (interval-based): `set` → returns `uuid`,
   `start/{uuid}` → `get`/`search_jobs` → `stop/{uuid}` + `remove/{uuid}`.
-  There is no `count` field.
+  There is no `count` field. `remove/{uuid}` fails while the job is still
+  running — `stop` it first, then `remove`. Read `search_jobs` for the live
+  `loss`/`send`/`received` counters; a `loss` of `0.0` with `send==received`
+  is a clean L3-reachability proof.
 - **`add_item` (VLAN/LAGG) needs a single-level model wrapper.** `addBase`
   reads `getPost('<model>')`, so the body is `{"vlan": {…}}` / `{"lagg": {…}}`
   (unlike the doubly-nested model `set` endpoints). The `opnsense_add_vlan` /
@@ -276,6 +288,26 @@ Exact tool names below (verified via `mcp.list_tools()`); every name is
   by interface name (`identifier`); `if` is the physical device. Set
   `"lock": "0"` on new items or deletion will refuse ("Interface locked").
   Changes go live on `reconfigure` — test on a spare box.
+- **Giving an interface an IP via the API is unreliable — use the WebUI form
+  + `reload_interface` (26.7, verified live on roshi opt1 / picolo).**
+  `set_item/<ifname>` loads the existing config node and `setNodes()` only sets
+  fields that already exist on it: if the node has no `type4`/`ipaddr`, those
+  are **silently dropped** while other fields (e.g. `descr`) still persist.
+  Model field format (from `NetworkInterface.xml`): `type4` = OptionField
+  (`none`/`staticv4`/`dhcp`/…), `ipaddr` = `.\NetworkField` wanting a CIDR
+  (`192.168.50.1/24`, `NetMaskRequired=Y`), `type6` + `dhcp6-ia-pd-len`
+  similar. `add_item` for a brand-new logical role fails with a bare
+  `data.result=="failed"` and no `validations`. The proven path: submit the
+  legacy `interfaces.php?if=<if>` form (fields `type=staticv4`, `ipaddr`,
+  `subnet`, `enable`, + session CSRF) — this writes `config.xml` directly — then
+  `opnsense_reload_interface({iface:"<if>"})`
+  (`interfaces/overview/reload_interface/<if>`) to bring it up. `reconfigure` is
+  **todo-only** (`store_if_todo`) and no-ops for legacy-form changes, so it will
+  NOT apply an IP; `reload_interface` is what actually applies. Verify live via
+  `GET interfaces/overview/interfaces_info` (rows carry `status`, `addr4`,
+  `flags`, `routes`). Proof of L3 reachability without shell: start a `ping`
+  job to the peer and read `query_pf_states` — an active ICMP state `src→dst`
+  whose `pkts:[out,in]` stay balanced is 0% loss.
 - **`opnsense_update_blocklist`** takes `uuid` + `domain` + `type`
   (`blocklists`/`allowlists`) — the domain alone is not enough.
 - **Monit status** prints "monit.sock does not exist" on stderr when the monit
