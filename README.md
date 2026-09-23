@@ -9,6 +9,7 @@ in its own folder with its own README (human) and agent guide.
 | Folder | What it does |
 |--------|--------------|
 | [`opnsense-mcp/`](opnsense-mcp/) | MCP server exposing the [OPNsense](https://opnsense.org) REST API — read state, and add/delete firewall rules, VLANs, NAT, services, backups, diagnostics. Includes a generic `opnsense_api` escape hatch for any documented endpoint. |
+| [`memory-mcp/`](memory-mcp/) | One Docker container running the basic-memory MCP server (streamable-http) plus the basic-memory-viewer web UI against one persistent store — a LAN-only memory/knowledge base for AI agents. |
 
 More tools will be added here over time.
 
