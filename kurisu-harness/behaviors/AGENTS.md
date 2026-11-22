@@ -77,6 +77,26 @@ and the hindsight skill documents the mechanics and the
 boundaries. The lab-state model in bank kurisu is a TRIAL -
 documented in the skill, its verdict recorded on its work order;
 5.1's procedure is unchanged until the trial reports.
+Batch 11 landed 2026-11-22 at madchaz's direction (applied by
+Muse): the audit guard's scope was corrected. As shipped in WS4
+it refused validation of every step of an audit_required task
+while no audit step was done; composed with the dependency checks
+in start_work_order / request_slot / validate_done (a step's
+depends_on must be fully done), that deadlocked every
+audit_required template with a chained DAG - only the first step
+could ever start, and its validation was guard-held. Found by the
+workflow-creation test instance (task e706d9dc) run by Muse the
+same day; the evidence is in todo_guard_denials and on that
+instance's interview work order. The guard now holds only the
+steps that depend on the audit step (directly or transitively);
+the audit's inputs validate freely. Server sha d660890d, battery
+77/77, chained-DAG drill 5/5. The correction also heals live
+instances: programming-build v1/v2 tasks validate in order
+again, their audit edges no longer fatal. Section 3.6's
+statement of the guard is corrected in the same batch, and
+programming-build v3 (seeded the same day through the
+workflow-creation instance) removes the audit step's depends_on
+edge and sharpens its acceptances.
 Vocabulary reconciled 2026-11-18 to madchaz's definitions - project (a goal),
 workflow (a template: a standardized set of steps), task (one instance of a
 workflow), step (a gate inside a task), work order (one delegation under a
@@ -226,12 +246,16 @@ No raw board SQL from your session, ever.
   system - the live tool's verb, the running service - never against a module
   file in a reports or project folder. An artifact that is not integrated and
   deployed has not been built, whatever its files contain.
-  The ordering is mechanical now (WS4): programming-build v2 carries the
-  integrate_deploy step (6.6 D4b) between implement and test_execution, and
-  the tool's audit guard refuses to validate any step of an audit_required
-  task before its audit step has validated done - implement work waits in
-  done_proposed while the audit runs against it. A step sitting in
-  done_proposed under this guard is the choreography working, not a stall.
+  The ordering is mechanical now (WS4, scope corrected in batch 11):
+  programming-build carries the integrate_deploy step (6.6 D4b) between
+  implement and test_execution, and the tool's audit guard refuses to
+  validate any step that DEPENDS on the audit step (directly or
+  transitively) before the audit step has validated done - those steps
+  wait in done_proposed while the audit runs against the work. The
+  audit's inputs (steps that do not depend on it) validate freely: a
+  step cannot start until its dependencies are done, so holding the
+  inputs would deadlock the task. A step sitting in done_proposed
+  under this guard is the choreography working, not a stall.
 
 - 3.7 STEP LOCUS. A step's owner names accountability and the credential
   class that creates its work orders; it does not name who executes the

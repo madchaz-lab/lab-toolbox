@@ -1,0 +1,124 @@
+{
+  "template": "programming-build",
+  "version": 3,
+  "metadata": {
+    "audit_required": true
+  },
+  "step_dag": [
+    {
+      "key": "plan",
+      "name": "plan: spec manifest + module decomposition",
+      "owner": "kurisu-researcher",
+      "acceptance": "spec manifest exists AND a module decomposition with an explicit dependency graph: modules named, each module's dependencies listed, interfaces identified, the parallel frontier (modules with no unmet dependencies) stated. The spec manifest names every constant the build will bake in (paths, ports, cadences, hashes) with the store it was read from, as text - a constant transcribed from a screenshot or a summary is unverified by definition. The plan declares, per step, the acceptance probe where the check is mechanical (file-hash, http-get, sql-select, cli-gate, mcp-call; 6.6 D1) and the diagnostic-gate map for the build's artifacts (6.10)",
+      "depends_on": []
+    },
+    {
+      "key": "architecture",
+      "name": "architecture and module interfaces",
+      "owner": "kurisu-programming",
+      "acceptance": "architecture artifact exists; module interfaces defined precisely enough that modules can be built independently against them",
+      "depends_on": [
+        "plan"
+      ]
+    },
+    {
+      "key": "threat_model",
+      "name": "threat modeling (parallel to architecture)",
+      "owner": "kurisu-security",
+      "acceptance": "threat model artifact exists; required when the build touches credentials, banks, or authorization - otherwise this step is cancelled with that reason recorded",
+      "depends_on": [
+        "plan"
+      ]
+    },
+    {
+      "key": "implement",
+      "name": "implement modules (parallel, dependency-gated)",
+      "owner": "kurisu-programming",
+      "acceptance": "every module in the decomposition is implemented; implementation work orders were dispatched per module as their dependencies cleared - parallel where the graph allowed, never above the dispatch cap; each module's artifact exists at its recorded path. Diagnostic gates (6.10: shellcheck / basedpyright / kubeconform, as applicable) run on every artifact before propose_done, with the command and its output recorded on the work order. Helper modules are import-safe: no executable tail outside a __main__ guard - an import never re-runs a demo or a smoke check. Every baked-in constant is width- and format-checked against the exact extraction (cut width, slice, parse) that will compare it, and the gate comparison itself is part of the test matrix. For container work, the effective invocation is read from the POD object (spec command/args merged with the image CMD), never concluded from the deployment spec alone",
+      "depends_on": [
+        "architecture",
+        "threat_model"
+      ]
+    },
+    {
+      "key": "integrate_deploy",
+      "name": "integrate and deploy to the target environment",
+      "owner": "kurisu-programming",
+      "acceptance": "the change is integrated and running in its target environment (deployed artifact identified by location + hash); module files in a reports folder are not a deployment",
+      "depends_on": [
+        "implement"
+      ]
+    },
+    {
+      "key": "test_execution",
+      "name": "test execution (quality runs, never the builder)",
+      "owner": "kurisu-quality",
+      "acceptance": "tests executed by kurisu-quality; results recorded on the step; test-fix loop count within bound 5, counted in step metadata. Test fixtures, battery instances and drill data the run creates are cleaned up in the same run (cancelled leaves-up, origin named); a run that leaves debris is not complete",
+      "depends_on": [
+        "integrate_deploy"
+      ]
+    },
+    {
+      "key": "security_scan",
+      "name": "security scan",
+      "owner": "kurisu-security",
+      "acceptance": "scan findings recorded; if the build has no security surface, cancelled with that reason recorded",
+      "depends_on": [
+        "test_execution"
+      ]
+    },
+    {
+      "key": "security_remediate",
+      "name": "security remediate",
+      "owner": "kurisu-programming",
+      "acceptance": "every scan finding remediated or explicitly accepted with a recorded reason",
+      "depends_on": [
+        "security_scan"
+      ]
+    },
+    {
+      "key": "security_audit_final",
+      "name": "security final audit (never self-graded)",
+      "owner": "kurisu-security",
+      "acceptance": "final security audit verdict recorded by an agent that did not do the remediation",
+      "depends_on": [
+        "security_remediate"
+      ]
+    },
+    {
+      "key": "audit",
+      "name": "audit step (non-builder, reads the code)",
+      "owner": "kurisu-quality",
+      "acceptance": "This step carries no depends_on by design: the audit gate is the tool's audit guard (no step of this task validates before this step), and a depends_on edge here deadlocks the task - the audit's work cannot start until its dependencies validate, and they cannot validate until this step is done (found 2026-11-22 in the v2 shape; evidence: the guard and the start/validate dependency checks in the todo server). FULL CONDITION, found the same day by running the workflow-creation test instance: the guard as shipped refuses validation of EVERY step while no audit step is done, and start_work_order/request_slot refuse to start a step whose depends_on are not all done - so in ANY audit_required template with a chained DAG, only the first step can ever work. This v3 shape is correct once the guard exempts the audit step's transitive ancestors (the steps the audit consumes) and holds only the steps downstream of the audit; that guard fix is a todo-tool change, recorded on the workflow-creation test instance (task e706d9dc) as its breakpoint. Until it lands, no audit_required template with a chained DAG can run - including this one. The work order for this step is created by choreography when test_execution's artifact exists, and the audit runs against that deployed artifact. The auditor read the code itself, not the builder's summary: no stubs, placeholder branches, TODO logic, or dead checks; every constant verified against the live system - from the store as text, never from a screenshot or the builder's transcript; helper modules' tails read for executable code; for deployed or container artifacts, the pod's effective command+args checked against the intended invocation; findings recorded as comments; a rejection includes a fix path",
+      "depends_on": []
+    },
+    {
+      "key": "final_validation",
+      "name": "final product validation",
+      "owner": "kurisu-quality",
+      "acceptance": "the whole product validated against the spec manifest; verdict recorded before any completion is reported",
+      "depends_on": [
+        "audit",
+        "security_audit_final"
+      ]
+    },
+    {
+      "key": "documentation_publish",
+      "name": "documentation publish (drafted early, published after acceptance)",
+      "owner": "kurisu-documentation",
+      "acceptance": "documentation published; nothing was published before acceptance",
+      "depends_on": [
+        "final_validation"
+      ]
+    },
+    {
+      "key": "close",
+      "name": "close",
+      "owner": "orchestrator",
+      "acceptance": "closure comment carries artifacts, test evidence, audit verdicts, loop counts, and any guard denials encountered during the task with their resolutions",
+      "depends_on": [
+        "documentation_publish"
+      ]
+    }
+  ]
+}

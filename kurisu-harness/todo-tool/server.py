@@ -1009,9 +1009,17 @@ def guard_probe_validate(entity_type, entity_id, ctx):
                           {"probe_id": comp["probe_id"], "verdict": pr.get("digest"), "confirm": pc.get("digest")})
 
 def guard_audit_validate(entity_type, entity_id, ctx):
-    """In an audit_required task, no step validates done before the
-    audit step itself - implement work waits in done_proposed while
-    the audit runs against it (the C2 choreography, AGENTS.md 3.6)."""
+    """In an audit_required task, the audit gate holds the steps that
+    DEPEND on the audit step (directly or transitively): they may not
+    validate done before the audit step itself - final validation waits
+    in done_proposed while the audit runs against the work (the C2
+    choreography, AGENTS.md 3.6). Steps the audit consumes (everything
+    that does not depend on it) validate freely: holding them hostage
+    deadlocks the task, because a step cannot start until its
+    depends_on are done, so the audit would never get its inputs
+    (batch 11, 2026-11-22 - found by the workflow-creation test
+    instance e706d9dc, whose interview step could not start behind a
+    guard-held plan step)."""
     if entity_type != "step":
         return
     step = get_entity("step", entity_id)
@@ -1024,11 +1032,36 @@ def guard_audit_validate(entity_type, entity_id, ctx):
         return
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT status, metadata FROM todo_steps WHERE task_id=%s", (str(step["task_id"]),))
-            audit = [r for r in cur.fetchall() if _meta_of(r).get("key") == "audit"]
+            cur.execute("SELECT id, status, metadata, depends_on FROM todo_steps WHERE task_id=%s", (str(step["task_id"]),))
+            rows = cur.fetchall()
+    audit = [r for r in rows if _meta_of(r).get("key") == "audit"]
     if any(r["status"] == "done" for r in audit):
         return
-    if audit and all(r["status"] == "cancelled" for r in audit):
+    if not audit:
+        raise GuardDenied("audit",
+                          "audit_required task has no audit step; create one with key 'audit' (todo.create_step) and complete it - the steps gated by the audit cannot validate until an audit step is done",
+                          {"task_id": str(step["task_id"])})
+    def _deps(r):
+        d = r.get("depends_on") or []
+        if isinstance(d, str):
+            d = json.loads(d)
+        return [str(x) for x in d]
+    audit_ids = {str(r["id"]) for r in audit}
+    deps_by_id = {str(r["id"]): _deps(r) for r in rows}
+    seen, stack = set(), list(deps_by_id.get(str(entity_id), []))
+    depends_on_audit = False
+    while stack:
+        cur_id = stack.pop()
+        if cur_id in seen:
+            continue
+        seen.add(cur_id)
+        if cur_id in audit_ids:
+            depends_on_audit = True
+            break
+        stack.extend(deps_by_id.get(cur_id, []))
+    if not depends_on_audit:
+        return
+    if all(r["status"] == "cancelled" for r in audit):
         raise GuardDenied("audit",
                           "the audit step is cancelled and no audit step has validated; create a replacement step with key 'audit' (todo.create_step) and complete it - this task cannot validate until an audit step is done",
                           {"task_id": str(step["task_id"])})
