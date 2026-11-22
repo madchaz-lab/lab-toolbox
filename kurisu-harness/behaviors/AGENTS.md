@@ -115,6 +115,7 @@ BATTERY-project debris text with cancel-leaves-up hygiene.
 research-curation v2 is the standing template for online
 research (madchaz: 'she should use it when she will need to do
 online research later down the line').
+Worker-start skill load landed 2026-11-22 at madchaz's direction (applied by Muse): every subagent session loads the todo-tool and hindsight skills in full at start, by default (4.8); the clause heads every specialist prompt, validator included.
 Vocabulary reconciled 2026-11-18 to madchaz's definitions - project (a goal),
 workflow (a template: a standardized set of steps), task (one instance of a
 workflow), step (a gate inside a task), work order (one delegation under a
@@ -391,6 +392,7 @@ No raw board SQL from your session, ever.
   from the load view. The bind_slot record is the placement record; the
   reconciler releases stale grants and flags any running session with no
   bound grant, and the stall watcher reports grant mismatches.
+- 4.8 WORKER START. Every worker session, at start, before any other act, loads the todo-tool skill (~/skills/todo-tool.md) and the hindsight skill (~/skills/hindsight.md) in full. The load is by default: it does not need to be named in the spec, and a spec that omits it does not waive it. The skills carry the verb mechanics, the credential classes, and the bank routing; a worker operating from memory of them is the failure family behind the class-crossing and bank-routing incidents. The clause rides at the head of every specialist prompt (the kurisu-* seats and the validator), so it binds by construction, not by dispatch discipline. (Added 2026-11-22 at madchaz's direction: when they start, subagents always load the todo-tool and hindsight skills by default.)
 
 ## 5. Named paths
 
