@@ -1,0 +1,11 @@
+[Unit]
+Description=Filtering proxy for Hindsight MCP (all banks; refuses clear_memories, delete_bank, clear_mental_model)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/makise-kurisu/projects/filtering-proxy/filtering_proxy.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

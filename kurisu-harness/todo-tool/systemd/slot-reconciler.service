@@ -1,0 +1,8 @@
+[Unit]
+Description=Kurisu todo slot-grant reconciler (WS2)
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/makise-kurisu
+ExecStart=/usr/bin/python3 /home/makise-kurisu/projects/kurisu-todo/slot_reconciler.py

@@ -1,0 +1,418 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "compaction": {
+    "auto": true,
+    "buffer": 41072,
+    "keep": {
+      "tokens": 8000
+    }
+  },
+  "model": "glimmer-db04/glimmer-30b",
+  "providers": {
+    "glimmer-db01": {
+      "models": {
+        "glimmer-30b": {
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "modelID": "/models/Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf",
+          "name": "Muse Glimmer 30B - db01"
+        }
+      },
+      "name": "Glimmer - db01 via MetalLB VIP",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://192.168.33.206:10021/v1"
+      }
+    },
+    "glimmer-db03": {
+      "models": {
+        "glimmer-30b": {
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "modelID": "/models/Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf",
+          "name": "Muse Glimmer 30B - db03"
+        }
+      },
+      "name": "Glimmer - db03 via MetalLB VIP",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://192.168.33.206:10023/v1"
+      }
+    },
+    "glimmer-db04": {
+      "models": {
+        "glimmer-30b": {
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "modelID": "/models/Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf",
+          "name": "Muse Glimmer 30B - db04"
+        }
+      },
+      "name": "Glimmer - db04 via MetalLB VIP",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://192.168.33.206:10024/v1"
+      }
+    }
+  },
+  "mcp": {
+    "hindsight": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu/"
+    },
+    "hindsight-researcher": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-researcher/"
+    },
+    "hindsight-programming": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-programming/"
+    },
+    "hindsight-labadmin": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-labadmin/"
+    },
+    "hindsight-conversation": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-conversation/"
+    },
+    "hindsight-quality": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-quality/"
+    },
+    "hindsight-documentation": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-documentation/"
+    },
+    "hindsight-security": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/kurisu-security/"
+    },
+    "hindsight-chronoa": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:HINDSIGHT_TENANT_KEY}"
+      },
+      "oauth": false,
+      "type": "remote",
+      "url": "http://127.0.0.1:8892/mcp/chronoa-singlebank/"
+    },
+    "kubernetes": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "kubernetes-mcp-server@latest"
+      ],
+      "environment": {
+        "KUBECONFIG": "/home/makise-kurisu/.kube/config"
+      }
+    },
+    "ssh-mcp": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "ssh-mcp"
+      ]
+    },
+    "todo": {
+      "type": "remote",
+      "url": "http://kurisu-todo.brains-containment.svc.cluster.local:8001/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Orchestrator-Token": "CHANGE_ME"
+      }
+    },
+    "mail": {
+      "type": "remote",
+      "url": "http://kurisu-mail.brains-containment.svc.cluster.local:8002/mcp",
+      "enabled": true
+    }
+  },
+  "agents": {
+    "orchestrator": {
+      "mode": "primary",
+      "model": "glimmer-db04/glimmer-30b",
+      "variant": "medium",
+      "description": "Kurisu herself - the lab orchestrator. Runs the loop: board, dispatch, verify, dual-write close.",
+      "system": "{file:./agents/orchestrator.md}",
+      "permissions": [
+        {
+          "action": "kubernetes_*",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "ssh-mcp_*",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "ssh_*",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-researcher": {
+      "mode": "subagent",
+      "description": "Research specialist. Web and source research, comparisons, digests.",
+      "system": "{file:./agents/kurisu-researcher.md}",
+      "model": "glimmer-db01/glimmer-30b",
+      "variant": "medium",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-programming": {
+      "mode": "subagent",
+      "description": "Programming specialist. Builds and fixes code, tests before claiming.",
+      "system": "{file:./agents/kurisu-programming.md}",
+      "model": "glimmer-db03/glimmer-30b",
+      "variant": "medium",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-labadmin": {
+      "mode": "subagent",
+      "description": "Lab administration specialist. Cluster and node operations via kubernetes and ssh-mcp.",
+      "system": "{file:./agents/kurisu-labadmin.md}",
+      "model": "glimmer-db01/glimmer-30b",
+      "variant": "low",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-conversation": {
+      "mode": "subagent",
+      "description": "Conversation specialist. Conversation with madchaz and Chronoa interview substrate.",
+      "system": "{file:./agents/kurisu-conversation.md}",
+      "model": "glimmer-db01/glimmer-30b",
+      "variant": "medium",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-quality": {
+      "mode": "subagent",
+      "description": "Quality specialist. Independent verification against the store.",
+      "system": "{file:./agents/kurisu-quality.md}",
+      "model": "glimmer-db03/glimmer-30b",
+      "variant": "high",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-documentation": {
+      "mode": "subagent",
+      "description": "Documentation specialist. Writes and maintains lab documentation.",
+      "system": "{file:./agents/kurisu-documentation.md}",
+      "model": "glimmer-db03/glimmer-30b",
+      "variant": "low",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "kurisu-security": {
+      "mode": "subagent",
+      "description": "Security specialist. Audits designs, code, and stored records.",
+      "system": "{file:./agents/kurisu-security.md}",
+      "model": "glimmer-db01/glimmer-30b",
+      "variant": "high",
+      "permissions": [
+        {
+          "action": "hindsight_clear_memories",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_delete_bank",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "hindsight_clear_mental_model",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "validator": {
+      "mode": "subagent",
+      "model": "glimmer-db01/glimmer-30b",
+      "variant": "high",
+      "description": "Read-only validator. The only path into done on the todo board.",
+      "system": "{file:./agents/validator.md}",
+      "permissions": [
+        {
+          "action": "write",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "bash",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    }
+  },
+  "default_agent": "orchestrator",
+  "plugin": [
+    "/home/makise-kurisu/projects/kurisu-todo-rightpane"
+  ]
+}

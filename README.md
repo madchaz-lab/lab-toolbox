@@ -10,6 +10,7 @@ in its own folder with its own README (human) and agent guide.
 |--------|--------------|
 | [`opnsense-mcp/`](opnsense-mcp/) | MCP server exposing the [OPNsense](https://opnsense.org) REST API — read state, and add/delete firewall rules, VLANs, NAT, services, backups, diagnostics. Includes a generic `opnsense_api` escape hatch for any documented endpoint. |
 | [`memory-mcp/`](memory-mcp/) | One Docker container running the basic-memory MCP server (streamable-http) plus the basic-memory-viewer web UI against one persistent store — a LAN-only memory/knowledge base for AI agents. |
+| [`kurisu-harness/`](kurisu-harness/) | The orchestrator harness for the lab's AI agent (Makise Kurisu): the 4-level todo board tool with slot grants, executor probes and guards; the Hindsight filtering proxy (per-bank MCP entries, destructive-trio refusal, read-only Chronoa path); the behavior ruleset, agent prompts and skills; the heartbeat backstop; Chronoa weekly-paper support. |
 
 More tools will be added here over time.
 

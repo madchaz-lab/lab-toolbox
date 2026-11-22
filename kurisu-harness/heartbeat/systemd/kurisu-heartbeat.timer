@@ -1,0 +1,10 @@
+[Unit]
+Description=Kurisu Heartbeat Timer
+
+[Timer]
+OnCalendar=*-*-* *:0/10:00
+Persistent=true
+Unit=kurisu-heartbeat.service
+
+[Install]
+WantedBy=timers.target

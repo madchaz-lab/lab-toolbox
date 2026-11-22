@@ -1,0 +1,13 @@
+[Unit]
+Description=Todo tool VM-local executor (WS3 probes)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/makise-kurisu
+ExecStart=/usr/bin/python3 /home/makise-kurisu/projects/kurisu-todo/todo_executor.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

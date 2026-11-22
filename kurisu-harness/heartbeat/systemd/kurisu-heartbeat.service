@@ -1,0 +1,11 @@
+[Unit]
+Description=Kurisu Heartbeat Automation
+After=network.target
+
+[Service]
+Type=oneshot
+User=makise-kurisu
+ExecStart=/usr/local/bin/kurisu-heartbeat.sh
+
+[Install]
+WantedBy=multi-user.target

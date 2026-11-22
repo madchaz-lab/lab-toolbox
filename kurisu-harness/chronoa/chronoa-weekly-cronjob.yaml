@@ -1,0 +1,171 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"batch/v1","kind":"CronJob","metadata":{"annotations":{},"labels":{"app":"chronoa-weekly"},"name":"chronoa-weekly","namespace":"brains-containment"},"spec":{"concurrencyPolicy":"Forbid","failedJobsHistoryLimit":3,"jobTemplate":{"spec":{"activeDeadlineSeconds":21600,"backoffLimit":1,"template":{"metadata":{"labels":{"app":"chronoa-weekly"}},"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/hostname","operator":"NotIn","values":["dragonball02"]}]}]}}},"containers":[{"command":["python3","/assets/entrypoint.py"],"env":[{"name":"WORK","value":"/work"},{"name":"ASSETS","value":"/assets"},{"name":"SEED","value":"/seed"},{"name":"HINDSIGHT_TENANT_KEY","valueFrom":{"secretKeyRef":{"key":"tenant-api-key","name":"hindsight-secrets"}}},{"name":"TODO_TOKEN","valueFrom":{"secretKeyRef":{"key":"token","name":"chronoa-runner-todo"}}}],"image":"python:3.11-slim","imagePullPolicy":"IfNotPresent","name":"runner","resources":{"limits":{"cpu":"2","memory":"4Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"volumeMounts":[{"mountPath":"/work","name":"work"},{"mountPath":"/assets","name":"assets","readOnly":true},{"mountPath":"/etc/prom","name":"prom","readOnly":true},{"mountPath":"/seed","name":"seed","readOnly":true}]}],"initContainers":[{"command":["python3","/assets/bootstrap.py"],"env":[{"name":"WORK","value":"/work"}],"image":"python:3.11-slim","imagePullPolicy":"IfNotPresent","name":"bootstrap","resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"250m","memory":"512Mi"}},"volumeMounts":[{"mountPath":"/work","name":"work"},{"mountPath":"/assets","name":"assets","readOnly":true}]}],"restartPolicy":"Never","serviceAccountName":"chronoa-phase4-sa","tolerations":[{"effect":"PreferNoSchedule","key":"workload","operator":"Equal","value":"restricted"},{"effect":"PreferNoSchedule","key":"workload","operator":"Equal","value":"llama-only"}],"volumes":[{"name":"work","persistentVolumeClaim":{"claimName":"chronoa-work-pvc-phase4"}},{"configMap":{"items":[{"key":"bootstrap.py","path":"bootstrap.py"},{"key":"entrypoint.py","path":"entrypoint.py"},{"key":"gen_config.py","path":"gen_config.py"},{"key":"retain_issue.py","path":"retain_issue.py"},{"key":"prometheus_mcp.py","path":"prometheus_mcp.py"},{"key":"chronoa_curated_proxy.py","path":"chronoa_curated_proxy.py"},{"key":"brief-template.md","path":"brief-template.md"},{"key":"test-brief.md","path":"test-brief.md"},{"key":"cast.md","path":"cast.md"},{"key":"agents--newsroom.md","path":"agents/newsroom.md"},{"key":"agents--chronoa.md","path":"agents/chronoa.md"},{"key":"agents--kurisu-persona.md","path":"agents/kurisu-persona.md"}],"name":"chronoa-runner-assets"},"name":"assets"},{"configMap":{"name":"prometheus-readonly-config"},"name":"prom"},{"configMap":{"name":"chronoa-issue-009","optional":true},"name":"seed"}]}}}},"schedule":"0 1 * * 0","startingDeadlineSeconds":3600,"successfulJobsHistoryLimit":3,"suspend":false,"timeZone":"America/Toronto"}}
+  creationTimestamp: "2026-11-22T00:31:15Z"
+  generation: 2
+  labels:
+    app: chronoa-weekly
+  name: chronoa-weekly
+  namespace: brains-containment
+  resourceVersion: "21472622"
+  uid: b71b0e87-7d34-4317-b229-2e79f163dca9
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata: {}
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: chronoa-weekly
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                    - dragonball02
+          containers:
+          - command:
+            - python3
+            - /assets/entrypoint.py
+            env:
+            - name: WORK
+              value: /work
+            - name: ASSETS
+              value: /assets
+            - name: SEED
+              value: /seed
+            - name: HINDSIGHT_TENANT_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: tenant-api-key
+                  name: hindsight-secrets
+            - name: TODO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: token
+                  name: chronoa-runner-todo
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            name: runner
+            resources:
+              limits:
+                cpu: "2"
+                memory: 4Gi
+              requests:
+                cpu: 500m
+                memory: 1Gi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /work
+              name: work
+            - mountPath: /assets
+              name: assets
+              readOnly: true
+            - mountPath: /etc/prom
+              name: prom
+              readOnly: true
+            - mountPath: /seed
+              name: seed
+              readOnly: true
+          dnsPolicy: ClusterFirst
+          initContainers:
+          - command:
+            - python3
+            - /assets/bootstrap.py
+            env:
+            - name: WORK
+              value: /work
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            name: bootstrap
+            resources:
+              limits:
+                cpu: "1"
+                memory: 1Gi
+              requests:
+                cpu: 250m
+                memory: 512Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /work
+              name: work
+            - mountPath: /assets
+              name: assets
+              readOnly: true
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          serviceAccount: chronoa-phase4-sa
+          serviceAccountName: chronoa-phase4-sa
+          terminationGracePeriodSeconds: 30
+          tolerations:
+          - effect: PreferNoSchedule
+            key: workload
+            operator: Equal
+            value: restricted
+          - effect: PreferNoSchedule
+            key: workload
+            operator: Equal
+            value: llama-only
+          volumes:
+          - name: work
+            persistentVolumeClaim:
+              claimName: chronoa-work-pvc-phase4
+          - configMap:
+              defaultMode: 420
+              items:
+              - key: bootstrap.py
+                path: bootstrap.py
+              - key: entrypoint.py
+                path: entrypoint.py
+              - key: gen_config.py
+                path: gen_config.py
+              - key: retain_issue.py
+                path: retain_issue.py
+              - key: prometheus_mcp.py
+                path: prometheus_mcp.py
+              - key: chronoa_curated_proxy.py
+                path: chronoa_curated_proxy.py
+              - key: brief-template.md
+                path: brief-template.md
+              - key: test-brief.md
+                path: test-brief.md
+              - key: cast.md
+                path: cast.md
+              - key: agents--newsroom.md
+                path: agents/newsroom.md
+              - key: agents--chronoa.md
+                path: agents/chronoa.md
+              - key: agents--kurisu-persona.md
+                path: agents/kurisu-persona.md
+              name: chronoa-runner-assets
+            name: assets
+          - configMap:
+              defaultMode: 420
+              name: prometheus-readonly-config
+            name: prom
+          - configMap:
+              defaultMode: 420
+              name: chronoa-issue-009
+              optional: true
+            name: seed
+  schedule: 0 1 * * 0
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  suspend: false
+  timeZone: America/Toronto
+status:
+  lastScheduleTime: "2026-11-22T06:00:00Z"
+  lastSuccessfulTime: "2026-11-22T06:00:14Z"

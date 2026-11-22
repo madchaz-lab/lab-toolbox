@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kurisu-todo
+  namespace: brains-containment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kurisu-todo
+  template:
+    metadata:
+      labels:
+        app: kurisu-todo
+    spec:
+      containers:
+      - name: kurisu-todo
+        image: python:3.11-slim
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - -c
+        - pip install --no-cache-dir fastmcp==4.2.0 "psycopg[binary]==3.3.9" && python /app/server.py
+        ports:
+        - containerPort: 8001
+        env:
+        - name: TODO_PGHOST
+          value: "kurisu-postgres.brains-containment.svc.cluster.local"
+        - name: TODO_PGPORT
+          value: "5432"
+        - name: TODO_PGUSER
+          valueFrom:
+            secretKeyRef:
+              name: kurisu-postgres-creds
+              key: username
+        - name: TODO_PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kurisu-postgres-creds
+              key: password
+        - name: TODO_PGDATABASE
+          valueFrom:
+            secretKeyRef:
+              name: kurisu-postgres-creds
+              key: database
+        - name: TODO_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: kurisu-todo-creds
+              key: token-secret
+        - name: TODO_PORT
+          value: "8001"
+        volumeMounts:
+        - name: code
+          mountPath: /app
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+      volumes:
+      - name: code
+        configMap:
+          name: kurisu-todo-code
+          defaultMode: 0644

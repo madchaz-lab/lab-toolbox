@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kurisu-postgres-pvc
+  namespace: brains-containment
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: rook-ceph-block
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kurisu-postgres
+  namespace: brains-containment
+  labels: {app: kurisu-postgres}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: kurisu-postgres}
+  template:
+    metadata:
+      labels: {app: kurisu-postgres}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports: [{containerPort: 5432}]
+          env:
+            - {name: POSTGRES_USER, value: kurisu}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: kurisu-postgres-creds, key: password}
+            - {name: POSTGRES_DB, value: kurisu}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, kurisu, -d, kurisu]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: kurisu-postgres-pvc}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kurisu-postgres
+  namespace: brains-containment
+  labels: {app: kurisu-postgres}
+spec:
+  selector: {app: kurisu-postgres}
+  ports: [{port: 5432, targetPort: 5432}]
