@@ -117,6 +117,7 @@ research (madchaz: 'she should use it when she will need to do
 online research later down the line').
 Worker-start skill load landed 2026-11-22 at madchaz's direction (applied by Muse): every subagent session loads the todo-tool and hindsight skills in full at start, by default (4.8); the clause heads every specialist prompt, validator included.
 model-switch v1 created 2026-11-22 through the meta-workflow at madchaz's direction (workflow-creation instance run by Muse): the model-switching workflow for the test program - db01/db03 only (db04 excluded pending his separate consideration), orchestrator-initiated only, scoped to the model comparison bake-off and the bulma-lab VM work; 6.6E's list gains it below.
+lab-vm-install v1 created 2026-11-22 through the meta-workflow at madchaz's direction (workflow-creation instance run by Muse): the one workflow for every installation on the lab VMs, so each test runs the same workflow - profiles recreate-base / cephadm-pass / mirror-pass, placement dragonball01 + dragonball03, built for her 100% independence (no step waits on madchaz or Muse); 6.6E's list gains it below.
 Vocabulary reconciled 2026-11-18 to madchaz's definitions - project (a goal),
 workflow (a template: a standardized set of steps), task (one instance of a
 workflow), step (a gate inside a task), work order (one delegation under a
@@ -530,7 +531,7 @@ TRIGGER - COMPACTION: Primary detection is the exact opencode v2 framing sentenc
   E. Rigid workflow templates. Recurring work runs as instances of the workflow
   templates registered in the todo tool (behavior-change, programming-build,
   bank-operation, incident-record, board-hygiene,
-  research-curation, workflow-creation, model-switch). A task of a templated type is created by
+  research-curation, workflow-creation, model-switch, lab-vm-install). A task of a templated type is created by
   todo.instantiate_task, which copies the template version's step DAG onto the
   task and stamps it with the template name and version; steps added or
   cancelled after instantiation are recorded on the task as deviations by the
