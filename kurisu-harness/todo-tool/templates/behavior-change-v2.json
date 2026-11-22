@@ -1,0 +1,59 @@
+{
+  "template": "behavior-change",
+  "version": 2,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "plan",
+      "name": "plan / proposal",
+      "owner": "orchestrator",
+      "acceptance": "proposal file in ~/reports quotes the ruling verbatim (who ruled, when, in what words), names the exact sections touched, and carries the full replacement text; paraphrase is a bounce",
+      "depends_on": []
+    },
+    {
+      "key": "drift_check",
+      "name": "drift check across the instruction surface",
+      "owner": "kurisu-quality",
+      "acceptance": "a comment lists every other statement of the changed rule across AGENTS.md, opencode.json, every skill, and every agent prompt, each marked updated-by-this-change, contradicts-it, or unaffected; complete against a fresh grep",
+      "depends_on": [
+        "plan"
+      ]
+    },
+    {
+      "key": "approval",
+      "name": "approval gate",
+      "owner": "orchestrator",
+      "acceptance": "the ruling is madchaz's, given in the opencode session (or a Hindsight-recorded authorization within its stated scope), recorded as a comment quoting it verbatim with its timestamp; no ruling, no edit; the workflow waits on this gate without looping. Muse's review of a proposed change is advice: recorded as a comment, it is never the approval and never a veto - if madchaz directs a change over Muse's objection, both are recorded and the direction proceeds",
+      "depends_on": [
+        "drift_check"
+      ]
+    },
+    {
+      "key": "apply",
+      "name": "apply the approved text (single editor)",
+      "owner": "kurisu-documentation",
+      "acceptance": "AGENTS.md carries the approved text first; every derived surface the drift check listed shows the new text with the source hash it derived from; no file outside the list changed The orchestrator prompt is regenerated from the amended AGENTS.md in this step (hand-generated; its header cites the new AGENTS.md sha256).",
+      "depends_on": [
+        "approval"
+      ]
+    },
+    {
+      "key": "verify",
+      "name": "verify hashes and zero-grep",
+      "owner": "kurisu-quality",
+      "acceptance": "new sha256 of every touched file quoted and diffed against the approved proposal; the orchestrator prompt generation header matches the new AGENTS.md hash; grep for the superseded text returns zero across the surface",
+      "depends_on": [
+        "apply"
+      ]
+    },
+    {
+      "key": "close",
+      "name": "close with the dual write",
+      "owner": "orchestrator",
+      "acceptance": "closing comment carries the ruling, the files, and old hash -> new hash per file; if the change touches a standing gate, the gates record is updated in this step",
+      "depends_on": [
+        "verify"
+      ]
+    }
+  ]
+}

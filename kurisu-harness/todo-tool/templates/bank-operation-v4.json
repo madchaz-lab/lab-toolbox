@@ -1,0 +1,69 @@
+{
+  "template": "bank-operation",
+  "version": 4,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "plan",
+      "name": "plan the bank operation",
+      "owner": "orchestrator",
+      "acceptance": "plan names the target bank, the mechanism that addresses it, the source of the content, and quotes the current gates-record state for bank operations The mechanism that addresses a bank is its per-bank MCP entry through the filtering proxy (hindsight-<bank> at 127.0.0.1:8892/mcp/<bank>/, batch 10); hand-rolled HTTP or curl - against the proxy or the upstream - is not a mechanism, and a plan naming one is bounced.",
+      "depends_on": []
+    },
+    {
+      "key": "probe",
+      "name": "probe (one operation, target bank only)",
+      "owner": "kurisu-quality",
+      "acceptance": "the NAMED bank's own stats moved (last_memory_write_at non-null, node count increased) AND recall from that bank returns the probe content; evidence from any other bank is not evidence The probe is executed inside that same dispatched work order; the orchestrator reads the moved stats from the store. The probe retain runs through the target bank's own MCP entry, and its landing is read on that bank's own stats and recall.",
+      "depends_on": [
+        "plan"
+      ]
+    },
+    {
+      "key": "execute",
+      "name": "execute the operation",
+      "owner": "orchestrator",
+      "acceptance": "operation executed serially by default; any parallelism is justified in the plan against db02's single extraction model load Executed by a dispatched work order under the seat the plan names (the target bank's own seat for content operations); the orchestrator dispatches and reads results from the store, and never executes the operation inline (AGENTS.md 3.7). The closing retain on the orchestrator's own bank (gear 1) is the only exception. Every retain and recall in the operation goes through the target bank's MCP entry; the chronoa-singlebank path is read-only through the proxy and is never a write target under this template. Retains into the kurisu-quality and kurisu-security banks are phrased as verified verdicts or findings - their extraction discards plain statements (2026-11-22).",
+      "depends_on": [
+        "probe"
+      ]
+    },
+    {
+      "key": "verify",
+      "name": "verify by recall from the target bank",
+      "owner": "kurisu-quality",
+      "acceptance": "recall from the target bank, per item class, returns the operated content; the bank queried is named in the evidence",
+      "depends_on": [
+        "execute"
+      ]
+    },
+    {
+      "key": "invalidate_superseded",
+      "name": "invalidate superseded source copies",
+      "owner": "orchestrator",
+      "acceptance": "every source copy the operation superseded is invalidated with a reason, one item at a time; no bulk removal used",
+      "depends_on": [
+        "verify"
+      ]
+    },
+    {
+      "key": "orientation_model",
+      "name": "create the desk's orientation mental model",
+      "owner": "orchestrator",
+      "acceptance": "For a seeding operation into a desk bank: the bank holds a mental model named for the desk (e.g. 'kurisu-<desk> orientation'), created in the TARGET bank over its per-bank proxy path (/mcp/<bank>/) after verify passed, its source_query synthesizing the desk's craft (patterns, pitfalls, verified facts of the seat's work), trigger_refresh_after_consolidation set; get_mental_model from the target bank returns its content, and the model id is cited in the closing comment. Executed by a dispatched work order under the target bank's own seat (AGENTS.md 3.7). For any other bank operation, the plan step lists this step as a deviation with its reason. The model is synthesis - orientation for the desk's workers, never evidence.",
+      "depends_on": [
+        "verify"
+      ]
+    },
+    {
+      "key": "close",
+      "name": "close",
+      "owner": "orchestrator",
+      "acceptance": "closure comment carries per-bank recall evidence naming the bank queried for each claim",
+      "depends_on": [
+        "invalidate_superseded",
+        "orientation_model"
+      ]
+    }
+  ]
+}

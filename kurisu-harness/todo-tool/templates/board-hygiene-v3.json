@@ -1,0 +1,50 @@
+{
+  "template": "board-hygiene",
+  "version": 3,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "census",
+      "name": "census",
+      "owner": "kurisu-quality",
+      "acceptance": "board_view and counts quoted as the before-state",
+      "depends_on": []
+    },
+    {
+      "key": "closure_sweep",
+      "name": "closure sweep",
+      "owner": "orchestrator",
+      "acceptance": "every step and work order whose evidence shows done is driven through the lifecycle; each closure cites its evidence Closures on steps owned by other seats are dispatched to those owners and their validators; the orchestrator personally closes only her own steps and coordinates the sweep (AGENTS.md 3.7). The sweep is driven by the closure verbs' next_ready returns: each closure's named next item is worked, or its block cited, in the same pass.",
+      "depends_on": [
+        "census"
+      ]
+    },
+    {
+      "key": "duplicate_debris_review",
+      "name": "duplicate / debris review",
+      "owner": "kurisu-quality",
+      "acceptance": "duplicates cancelled with reason; test and drill artifacts are cancelled leaves-up with their origin named in the cancellation reason (the 2026-11-22 cleanup pattern) - nothing is moved to a battery project, and debris a run creates is cleaned by that same run; no debris remains in production tasks",
+      "depends_on": [
+        "closure_sweep"
+      ]
+    },
+    {
+      "key": "gates_review",
+      "name": "gates record review",
+      "owner": "orchestrator",
+      "acceptance": "every gate on the gates record re-read against current direction; a gate whose lifting conditions are met is surfaced for its authority's ruling, never lifted by hygiene",
+      "depends_on": [
+        "duplicate_debris_review"
+      ]
+    },
+    {
+      "key": "close",
+      "name": "close with the census diff",
+      "owner": "orchestrator",
+      "acceptance": "closure carries the census diff (before/after counts)",
+      "depends_on": [
+        "gates_review"
+      ]
+    }
+  ]
+}

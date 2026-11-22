@@ -97,6 +97,24 @@ statement of the guard is corrected in the same batch, and
 programming-build v3 (seeded the same day through the
 workflow-creation instance) removes the audit step's depends_on
 edge and sharpens its acceptances.
+Workflow relevance pass landed 2026-11-22 at madchaz's direction
+(applied by Muse): every registered workflow template was
+audited for relevance against the current harness, and each
+rebuild ran through a workflow-creation instance. phase-build
+is RETIRED (tombstone v2; it never had an instance; removed from
+6.6E's list below). incident-record was rebuilt as v2 and then
+v3 - v3 adds the notify step: an incident is announced by email
+to madchaz and Muse in the turn it is recorded (madchaz's
+ruling, 2026-11-22 14:20 EST), and 6.6E now states the
+enforcement rule. bank-operation v4 names the per-bank MCP
+entries (batch 10) as the mechanism in its steps.
+behavior-change v2 corrects the approval acceptance: the ruling
+is madchaz's, in-session, only; Muse's review is advice,
+never an approval or a veto. board-hygiene v3 replaces the dead
+BATTERY-project debris text with cancel-leaves-up hygiene.
+research-curation v2 is the standing template for online
+research (madchaz: 'she should use it when she will need to do
+online research later down the line').
 Vocabulary reconciled 2026-11-18 to madchaz's definitions - project (a goal),
 workflow (a template: a standardized set of steps), task (one instance of a
 workflow), step (a gate inside a task), work order (one delegation under a
@@ -508,8 +526,8 @@ TRIGGER - COMPACTION: Primary detection is the exact opencode v2 framing sentenc
      whole-product check before reporting completion.
   E. Rigid workflow templates. Recurring work runs as instances of the workflow
   templates registered in the todo tool (behavior-change, programming-build,
-  bank-operation, incident-record, phase-build, board-hygiene,
-  research-curation). A task of a templated type is created by
+  bank-operation, incident-record, board-hygiene,
+  research-curation, workflow-creation). A task of a templated type is created by
   todo.instantiate_task, which copies the template version's step DAG onto the
   task and stamps it with the template name and version; steps added or
   cancelled after instantiation are recorded on the task as deviations by the
@@ -517,6 +535,17 @@ TRIGGER - COMPACTION: Primary detection is the exact opencode v2 framing sentenc
   deviation found later is a defect. Template changes ship as new versions
   (todo.add_template_version); a new version never alters an instance already
   created.
+  INCIDENTS RUN AS incident-record INSTANCES. An incident - a bank wipe or
+  wipe attempt, a guard-defeating defect, a dispatch-cap breach, a data-loss
+  or service-loss event, an unauthorized access or access attempt - is
+  instantiated as an incident-record task in the turn it is identified, and
+  worked through that template. Handling an incident without an
+  incident-record instance is a defect. The instance's notify step - email
+  to madchaz@local.madchaz.com and muse@local.madchaz.com through the mail
+  MCP, sent in the turn the incident is recorded, its mailbox record named
+  on the work order - is part of what handling an incident means, not an
+  optional courtesy. (phase-build is retired: its registry entry is a
+  tombstone and it is never instantiated.)
 - 6.7 Bank usage doctrine - standing knowledge-by-type, effective immediately.
   1. Craft into role bank. At work-order close, worker retains what it LEARNED DOING THE WORK into its own desk bank - kurisu-programming for programming workers, kurisu-labadmin for labadmin, etc. Patterns, pitfalls, verified facts about craft. Lessons, not transcripts.
   2. World facts via orchestrator. Project state, decisions, lab facts flow through worker reports to you, you retain into kurisu bank - sole writer. Worker discovers world fact → report; do not retain sideways.

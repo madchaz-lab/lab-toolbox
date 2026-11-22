@@ -1,0 +1,41 @@
+{
+  "template": "research-curation",
+  "version": 2,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "reading_list",
+      "name": "reading list with provenance",
+      "owner": "kurisu-researcher",
+      "acceptance": "candidate list carries provenance: primary sources only, each URL opened and verified at capture; the list is reviewed before any ingestion, and the review and its source are recorded on this step",
+      "depends_on": []
+    },
+    {
+      "key": "distill",
+      "name": "distill per-source notes",
+      "owner": "kurisu-researcher",
+      "acceptance": "per-source notes exist as files, sources named in each Notes follow the notes-artifact discipline: one file per source, every claim tied to the passage it rests on, quotes short and exact; a note that cannot name its passage is not evidence. Sources are read at the page, never from a summary of the source.",
+      "depends_on": [
+        "reading_list"
+      ]
+    },
+    {
+      "key": "ingest",
+      "name": "ingest as a bank operation",
+      "owner": "orchestrator",
+      "acceptance": "ingestion executed as a bank-operation task instance (never a bare dispatch); its id is recorded on this step",
+      "depends_on": [
+        "distill"
+      ]
+    },
+    {
+      "key": "verify",
+      "name": "verify by recall from the target bank",
+      "owner": "kurisu-quality",
+      "acceptance": "recall from the target bank returns the ingested content; evidence quotes the bank queried Retains that land in the kurisu-quality or kurisu-security banks are phrased as verified verdicts or findings - their extraction discards plain statements (2026-11-22).",
+      "depends_on": [
+        "ingest"
+      ]
+    }
+  ]
+}

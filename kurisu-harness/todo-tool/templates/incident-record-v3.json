@@ -1,0 +1,60 @@
+{
+  "template": "incident-record",
+  "version": 3,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "record",
+      "name": "record the facts from the store",
+      "owner": "orchestrator",
+      "acceptance": "the record contains only store facts: session ids, timestamps, tool calls, before/after counts; intent is not recorded because it is not in the store The record names where the incident was first observed (session, report, work order, or gate) and cites the evidence behind each fact. An incident is what the template definition names: a destructive or unauthorized act, a false report that reached a record, a gate breach, or a mechanism found not to enforce what its text claims.",
+      "depends_on": []
+    },
+    {
+      "key": "notify",
+      "name": "notify madchaz and Muse by email",
+      "owner": "orchestrator",
+      "acceptance": "An email about this incident has been sent through the mail MCP from kurisu@local.madchaz.com to BOTH madchaz@local.madchaz.com and muse@local.madchaz.com, in the same turn the incident is recorded (before the impact work begins; if the containment act is itself the emergency, immediately after it). The message carries: the incident-record instance id, what happened, where it was first observed, the current containment state, and the board pointer to this instance. The sent message's mailbox record (its entry in the Sent folder / its message id) is named on this step's work order as the evidence. A notification that exists only as a sentence in a report does not satisfy this step - the mail store is the proof, as everywhere else in this lab.",
+      "depends_on": [
+        "record"
+      ],
+      "description": "Frank's ruling, 2026-11-22 14:20 EST: an incident is not only recorded, it is ANNOUNCED - by email, to madchaz and to Muse, when it happens, not at close. The mailbox is the lab's shared channel and the mail store outranks any claim of having sent."
+    },
+    {
+      "key": "impact",
+      "name": "impact assessment",
+      "owner": "kurisu-quality",
+      "acceptance": "impact statement names what state is now wrong and what depends on it Dependent state is named explicitly - banks, board elements, files, services - each with its current verified state, read from its store at assessment time.",
+      "depends_on": [
+        "notify"
+      ]
+    },
+    {
+      "key": "containment",
+      "name": "containment",
+      "owner": "orchestrator",
+      "acceptance": "the containment act that stops recurrence now is in force and cited in the record - a mechanical act where one exists (the filtering proxy's write refusals for bank danger, a paused worker, a suspended CronJob, a stopped service); a containment that is only a decision is recorded as a decision, with the mechanism that will enforce it named, or its absence stated",
+      "depends_on": [
+        "impact"
+      ]
+    },
+    {
+      "key": "mechanism_fix_boarded",
+      "name": "mechanism fix boarded as its own task",
+      "owner": "orchestrator",
+      "acceptance": "the mechanism fix is boarded as its own task (programming-build or bank-operation template) and its id is named in the record; the fix is NOT executed inside this incident Where the fix changes a tool, the task carries the tool-change principle: change the tool to fit the mechanism - no workarounds, no proxy-derived flags, no scripts standing in for verbs.",
+      "depends_on": [
+        "containment"
+      ]
+    },
+    {
+      "key": "close",
+      "name": "close",
+      "owner": "orchestrator",
+      "acceptance": "incident closed with the fix task's id recorded; the fix closes on its own acceptance, not here The closing record is also retained into bank kurisu (the dual write); if the incident produced a standing gate, the gates record carries it before this step closes.",
+      "depends_on": [
+        "mechanism_fix_boarded"
+      ]
+    }
+  ]
+}

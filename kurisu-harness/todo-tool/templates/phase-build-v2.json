@@ -1,0 +1,14 @@
+{
+  "template": "phase-build",
+  "version": 2,
+  "metadata": {},
+  "step_dag": [
+    {
+      "key": "retired",
+      "name": "RETIRED - do not instantiate",
+      "owner": "orchestrator",
+      "acceptance": "This template was retired by madchaz's ruling of 2026-11-22 (it had never been instantiated; the relevance review found no live work for it). Do not instantiate it. Any instance created from this version is cancelled with that ruling as its reason.",
+      "depends_on": []
+    }
+  ]
+}
