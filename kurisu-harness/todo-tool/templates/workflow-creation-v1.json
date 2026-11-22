@@ -1,0 +1,93 @@
+{
+  "template": "workflow-creation",
+  "version": 1,
+  "note": "Seeded live in the kurisu-todo registry 2026-11-22 (template id a30b33db-2aae-4bf6-b3d8-1eb8478e3ba8). This file is the replication copy: re-seed with todo.create_template(name, step_dag, description, metadata). Spec of record: board comment d38ec437 (2026-11-18); reviewed proposal: workflow-creation-template-v1-proposal-2026-11-22.",
+  "registry_record": {
+    "name": "workflow-creation",
+    "version": 1,
+    "step_dag": [
+      {
+        "key": "plan",
+        "name": "plan: fit check and instance record",
+        "owner": "orchestrator",
+        "acceptance": "plan records: the request and the requester; the fit check against list_templates/get_template with its outcome (new template / new version of an existing template / already covered - a covered outcome ends the instance here with the finding recorded); the spec manifest artifact path; any standing gate touching template work, quoted from the gates record",
+        "depends_on": []
+      },
+      {
+        "key": "interview",
+        "name": "interview: zero in on the workflow",
+        "owner": "orchestrator",
+        "acceptance": "every topic answered by the requester or explicitly waived with a reason: purpose; trigger; inputs; outputs; step list with owners; dependency gates; acceptance evidence per step (artifact + store + probe where possible - a worker's success claim is not evidence); failure modes; shared-resource and serialization constraints; probe candidates; surfaces touched (banks via their per-bank MCP entries, tools, files). Answers land in the spec manifest artifact AND as a comment on this task. While answers are outstanding the step stays open with the questions cited in its comment - a cited wait, not a stall. Drafting does not start before this step validates",
+        "depends_on": [
+          "plan"
+        ]
+      },
+      {
+        "key": "premise_verification",
+        "name": "verify premises against their stores",
+        "owner": "kurisu-quality",
+        "acceptance": "every premise in the spec manifest that names existing state (templates, banks, services, files, constants) is verified against its store and quoted in the evidence; constants are read from the store as text, never transcribed from a screenshot or summary; a premise the store contradicts is surfaced as a breakpoint, not carried into the draft",
+        "depends_on": [
+          "interview"
+        ]
+      },
+      {
+        "key": "draft",
+        "name": "draft the template version",
+        "owner": "orchestrator",
+        "acceptance": "draft artifact carries the full step_dag in registry shape (key / name / owner / acceptance / depends_on per step) plus version metadata: plan step first (3.3); step keys kebab-case and treated as permanent (a later version may not drop a key with live instances); every owner a real seat, orchestrator only for the closed list in AGENTS.md 3.7, execution steps naming the seat that holds their work orders; depends_on acyclic; per-step acceptance checkable from the store; probe declarations recorded for probeable checks (6.6 D1); class-crossing closures named with their token-argument path; serialization constraints from the interview encoded as dependency gates or serial steps; the audit_required decision recorded with its reason",
+        "depends_on": [
+          "premise_verification"
+        ]
+      },
+      {
+        "key": "audit",
+        "name": "audit the draft (non-author)",
+        "owner": "kurisu-quality",
+        "acceptance": "the auditor checked the draft itself, not a summary: owners real and locus-correct (3.7); DAG acyclic and plan-first; every acceptance checkable and evidence-shaped; probes declared where a check is mechanical; class-crossing paths named; no scratch-template dry-run in the design (the registry has no delete); key stability against any prior version; a rejection carries a fix path (6.6C) and the bounce is counted on the step (bound 3, 6.6A)",
+        "depends_on": [
+          "draft"
+        ]
+      },
+      {
+        "key": "requester_review",
+        "name": "requester approval gate",
+        "owner": "orchestrator",
+        "acceptance": "the requester's ruling on the audited draft is recorded as a comment quoting it verbatim with its timestamp; no approval, no seed; the workflow waits on this gate without looping. If the workflow changes behavior surfaces (rules, prompts, skills), its text routes through a behavior-change instance - this workflow seeds template mechanics only",
+        "depends_on": [
+          "audit"
+        ]
+      },
+      {
+        "key": "seed",
+        "name": "seed the template version",
+        "owner": "orchestrator",
+        "acceptance": "create_template (new template) or add_template_version (revision) executed with the approved dag; the tool's return and the seeded dag's hash are recorded on the task; list_templates shows the template at the seeded version",
+        "depends_on": [
+          "requester_review"
+        ]
+      },
+      {
+        "key": "dry_run",
+        "name": "dry-run on a trivial instance, self-cleaning",
+        "owner": "kurisu-quality",
+        "acceptance": "the seeded version is instantiated as a task on a trivial but real-shaped instance; at least one work order is carried through the full choreography (request_slot, spawn on the granted node, bind_slot, structured propose_done carrying any declared probe, executor verdict, accept, validate_done); render_composition of the instance is attached to this task as the DAG proof; the dry-run instance is then closed or cancelled with its reason IN THE SAME RUN - no board or registry debris. On failure: findings recorded, and draft-audit-review-seed re-run for version+1 as recorded deviations (6.6E)",
+        "depends_on": [
+          "seed"
+        ]
+      },
+      {
+        "key": "close",
+        "name": "close with the dual write",
+        "owner": "orchestrator",
+        "acceptance": "closing comment carries: template name and version, the dag hash, the dry-run instance id and its verdict, every deviation, and the closing retain's id (retain into bank kurisu through the hindsight entry, 3.4). If the template becomes a standing workflow, a behavior-change instance for the AGENTS.md 6.6E template-list update is boarded and its id recorded here - boarded, not bundled",
+        "depends_on": [
+          "dry_run"
+        ]
+      }
+    ],
+    "metadata": {
+      "audit_required": true
+    }
+  }
+}
